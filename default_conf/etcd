@@ -1,0 +1,1 @@
+ETCD_OPTS=" -name infra --listen-client-urls=http://127.0.0.1:4001,http://192.168.56.133:4001 -advertise-client-urls http://192.168.56.133:4001"

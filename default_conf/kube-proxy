@@ -1,0 +1,1 @@
+KUBE_PROXY_OPTS=" --hostname-override=192.168.56.133  --master=http://192.168.56.133:8080  --logtostderr=false --cluster-cidr=192.168.0.0/16  --kubeconfig=/etc/kubernetes/kube-proxy.kubeconfig --v=2"
