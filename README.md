@@ -1,46 +1,46 @@
 # k8s-1.6-calico-deploy
 k8s 1.6.3 + calico 部署文件
+Ubuntu 14.04，etcd未使用ssl.
+
+主要步骤参考如下内容(将systemd修改成sysv，具体可以使用repo中的配置文件)
+
 
 
 环境说明
 
 k8s-master-1: 10.6.0.140
+
 k8s-master-2: 10.6.0.187
+
 k8s-node-1:   10.6.0.188
+
 初始化环境
 
 hostnamectl --static set-hostname hostname
 
 10.6.0.140 - k8s-master-1
+
 10.6.0.187 - k8s-master-2
+
 10.6.0.188 - k8s-node-1
+
 #编辑 /etc/hosts 文件，配置hostname 通信
 
 vi /etc/hosts
 
 10.6.0.140 k8s-master-1
+
 10.6.0.187 k8s-master-2
+
 10.6.0.188 k8s-node-1
+
 创建 验证
-这里使用 CloudFlare 的 PKI 工具集 cfssl 来生成 Certificate Authority (CA) 证书和秘钥文件。
+
 安装 cfssl
 
 mkdir -p /opt/local/cfssl
 
 cd /opt/local/cfssl
-
-wget https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
-
-mv cfssl_linux-amd64 cfssl
-
-wget https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
-
-mv cfssljson_linux-amd64 cfssljson
-
-wget https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64
-
-mv cfssl-certinfo_linux-amd64 cfssl-certinfo
-
 chmod +x *
 创建 CA 证书配置
 
@@ -190,145 +190,23 @@ chmod 644 /etc/kubernetes/ssl/etcd-key.pem
 
 修改 etcd 配置
 
-修改 etcd 启动文件 /usr/lib/systemd/system/etcd.service
+修改 etcd 启动文件 
 # etcd-1
 
 
-vi /usr/lib/systemd/system/etcd.service
 
-
-[Unit]
-Description=Etcd Server
-After=network.target
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=notify
-WorkingDirectory=/var/lib/etcd/
-User=etcd
-# set GOMAXPROCS to number of processors
-ExecStart=/usr/bin/etcd \
-  --name=etcd1 \
-  --cert-file=/etc/kubernetes/ssl/etcd.pem \
-  --key-file=/etc/kubernetes/ssl/etcd-key.pem \
-  --peer-cert-file=/etc/kubernetes/ssl/etcd.pem \
-  --peer-key-file=/etc/kubernetes/ssl/etcd-key.pem \
-  --trusted-ca-file=/etc/kubernetes/ssl/ca.pem \
-  --peer-trusted-ca-file=/etc/kubernetes/ssl/ca.pem \
-  --initial-advertise-peer-urls=https://10.6.0.140:2380 \
-  --listen-peer-urls=https://10.6.0.140:2380 \
-  --listen-client-urls=https://10.6.0.140:2379,http://127.0.0.1:2379 \
-  --advertise-client-urls=https://10.6.0.140:2379 \
-  --initial-cluster-token=k8s-etcd-cluster \
-  --initial-cluster=etcd1=https://10.6.0.140:2380,etcd2=https://10.6.0.187:2380,etcd3=https://10.6.0.188:2380 \
-  --initial-cluster-state=new \
-  --data-dir=/var/lib/etcd
-Restart=on-failure
-RestartSec=5
-LimitNOFILE=65536
-
-[Install]
-WantedBy=multi-user.target
-
-# etcd-2
-
-
-vi /usr/lib/systemd/system/etcd.service
-
-
-[Unit]
-Description=Etcd Server
-After=network.target
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=notify
-WorkingDirectory=/var/lib/etcd/
-User=etcd
-# set GOMAXPROCS to number of processors
-ExecStart=/usr/bin/etcd \
-  --name=etcd2 \
-  --cert-file=/etc/kubernetes/ssl/etcd.pem \
-  --key-file=/etc/kubernetes/ssl/etcd-key.pem \
-  --peer-cert-file=/etc/kubernetes/ssl/etcd.pem \
-  --peer-key-file=/etc/kubernetes/ssl/etcd-key.pem \
-  --trusted-ca-file=/etc/kubernetes/ssl/ca.pem \
-  --peer-trusted-ca-file=/etc/kubernetes/ssl/ca.pem \
-  --initial-advertise-peer-urls=https://10.6.0.187:2380 \
-  --listen-peer-urls=https://10.6.0.187:2380 \
-  --listen-client-urls=https://10.6.0.187:2379,http://127.0.0.1:2379 \
-  --advertise-client-urls=https://10.6.0.187:2379 \
-  --initial-cluster-token=k8s-etcd-cluster \
-  --initial-cluster=etcd1=https://10.6.0.140:2380,etcd2=https://10.6.0.187:2380,etcd3=https://10.6.0.188:2380 \
-  --initial-cluster-state=new \
-  --data-dir=/var/lib/etcd
-Restart=on-failure
-RestartSec=5
-LimitNOFILE=65536
-
-[Install]
-WantedBy=multi-user.target
-
-# etcd-3
-
-
-vi /usr/lib/systemd/system/etcd.service
-
-
-[Unit]
-Description=Etcd Server
-After=network.target
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=notify
-WorkingDirectory=/var/lib/etcd/
-User=etcd
-# set GOMAXPROCS to number of processors
-ExecStart=/usr/bin/etcd \
-  --name=etcd3 \
-  --cert-file=/etc/kubernetes/ssl/etcd.pem \
-  --key-file=/etc/kubernetes/ssl/etcd-key.pem \
-  --peer-cert-file=/etc/kubernetes/ssl/etcd.pem \
-  --peer-key-file=/etc/kubernetes/ssl/etcd-key.pem \
-  --trusted-ca-file=/etc/kubernetes/ssl/ca.pem \
-  --peer-trusted-ca-file=/etc/kubernetes/ssl/ca.pem \
-  --initial-advertise-peer-urls=https://10.6.0.188:2380 \
-  --listen-peer-urls=https://10.6.0.188:2380 \
-  --listen-client-urls=https://10.6.0.188:2379,http://127.0.0.1:2379 \
-  --advertise-client-urls=https://10.6.0.188:2379 \
-  --initial-cluster-token=k8s-etcd-cluster \
-  --initial-cluster=etcd1=https://10.6.0.140:2380,etcd2=https://10.6.0.187:2380,etcd3=https://10.6.0.188:2380 \
-  --initial-cluster-state=new \
-  --data-dir=/var/lib/etcd
-Restart=on-failure
-RestartSec=5
-LimitNOFILE=65536
-
-[Install]
-WantedBy=multi-user.target
 
 启动 etcd
 
 分别启动 所有节点的 etcd 服务
-systemctl enable etcd
 
-systemctl start etcd
-
-systemctl status etcd
 # 如果报错 请使用
-journalctl -f -t etcd  和 journalctl -u etcd 来定位问题
+
 
 验证 etcd 集群状态
 
 查看 etcd 集群状态：
-etcdctl --endpoints=https://10.6.0.140:2379 \
-        --cert-file=/etc/kubernetes/ssl/etcd.pem \
-        --ca-file=/etc/kubernetes/ssl/ca.pem \
-        --key-file=/etc/kubernetes/ssl/etcd-key.pem \
+etcdctl --endpoints=http://10.6.0.140:2379 \
         cluster-health
 
 member 29262d49176888f5 is healthy: got healthy result from https://10.6.0.188:2379
@@ -336,10 +214,7 @@ member d4ba1a2871bfa2b0 is healthy: got healthy result from https://10.6.0.140:2
 member eca58ebdf44f63b6 is healthy: got healthy result from https://10.6.0.187:2379
 cluster is healthy
 查看 etcd 集群成员：
-etcdctl --endpoints=https://10.6.0.140:2379 \
-        --cert-file=/etc/kubernetes/ssl/etcd.pem \
-        --ca-file=/etc/kubernetes/ssl/ca.pem \
-        --key-file=/etc/kubernetes/ssl/etcd-key.pem \
+etcdctl --endpoints=http://10.6.0.140:2379 \
         member list
 
 
@@ -348,20 +223,6 @@ d4ba1a2871bfa2b0: name=etcd1 peerURLs=https://10.6.0.140:2380 clientURLs=https:/
 eca58ebdf44f63b6: name=etcd2 peerURLs=https://10.6.0.187:2380 clientURLs=https://10.6.0.187:2379 isLeader=false
 
 安装 docker
- # 导入 yum 源
-
-# 安装 yum-config-manager
-
-yum -y install yum-utils
-
-# 导入
-yum-config-manager \
-    --add-repo \
-    https://download.docker.com/linux/centos/docker-ce.repo
-
-
-# 更新 repo
-yum makecache
 
 # 安装
 
